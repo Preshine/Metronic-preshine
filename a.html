@@ -1,0 +1,31 @@
+<html>
+
+<head>
+    <script id="dd" type="text/javascript">
+
+    </script>
+</head>
+
+<body>
+    <div>aaa</div>
+    <button onclick="ck()">dddd</button>
+</body>
+
+<script>
+    function ck() {
+
+        // let head = document.getElementsByTagName('head')[0];
+        // var script = document.createElement('script');
+        // script.type = 'text/javascript';
+        // var text = document.createTextNode('console.log(666)');
+        // script.appendChild(text);
+        // head.appendChild(script);
+
+        var s = document.getElementById('dd');
+        var node2 = document.createTextNode('console.log(666)');
+        s.appendChild(node2);
+    }
+
+</script>
+
+</html>
