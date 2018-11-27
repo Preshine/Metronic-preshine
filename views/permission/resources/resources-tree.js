@@ -1,7 +1,7 @@
 $(document).ready(function () {
     $.ajax({
         type: 'get',
-        url: 'http://127.0.0.1:8082/preshine/api/user/getMenuData?PSESSIONID=2b73f7fef96b42eb9a7370733cf408c4',
+        url: 'http://127.0.0.1:8082/preshine/api/user/getMenuData?PSESSIONID=' + sessionStorage.getItem('p_token'),
         dataType: 'json',
         success: function (data) {
             data = data.obj;
