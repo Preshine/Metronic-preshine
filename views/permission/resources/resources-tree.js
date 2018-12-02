@@ -1,3 +1,5 @@
+var records = [];
+
 $(document).ready(function () {
     $.ajax({
         type: 'get',
@@ -11,6 +13,7 @@ $(document).ready(function () {
                 id: 'id',
                 parentId: 'parentId',
             };
+            records = JSON.parse(JSON.stringify(data));
             var data = toTreeData(data, attributes);
             var list = [];
             treeToList(data[0], list);
@@ -21,8 +24,8 @@ $(document).ready(function () {
                     + '<div class="checker"><span><input type="checkbox" class="group-checkable" data-set="#sample_2 .checkboxes"></span></div></th>'
                     + "<td class=\"center\" style='text-align:center;vertical-align:middle;' >" + obj.name + "</td><td class=\"center\" style='text-align:left;vertical-align:middle;'>"
                     + obj.path + "</td><td class=\"center\" style='text-align:center;vertical-align:middle;' >"
-                    + "<button class='btn btn-success' id=\"" + obj.id + "\">编辑</button>"
-                    + "<button class='delete-res btn btn-danger'  id=\"bs_confirmation_delete\" dataId=\"" + obj.id + "\">删除</button></td></tr>");
+                    + "<button class='btn btn-success' onclick=\"handlerAction('edit', this)\" dataId=\"" + obj.id + "\">编辑</button>"
+                    + "<button class='delete-res btn btn-danger' dataId=\"" + obj.id + "\">删除</button></td></tr>");
             });
             $("#treeTable").treetable({
                 expandable: true,
@@ -42,7 +45,7 @@ $(document).ready(function () {
                 onConfirm: function (e, el) {
                     var dataId = $(el).attr('dataId');
                     console.log('dataId is :', $(el).attr('dataId'))
-                    $.post('http://127.0.0.1:8082/preshine/api/resources/delete?PSESSIONID=' + sessionStorage.getItem('p_token'), { resId: dataId }, function (res) {
+                    $.post('http://127.0.0.1:8082/preshine/api/resources/delete1?PSESSIONID=' + sessionStorage.getItem('p_token'), { resId: dataId }, function (res) {
 
                     })
                 },
@@ -53,6 +56,15 @@ $(document).ready(function () {
 
     });
 });
+
+function handlerAction(action, me) {
+    var me = $(me);
+    var dataId = me.attr('dataId');
+    var current = records.filter(r => r.id == dataId)[0];
+    if (action == 'edit') {
+        console.log(current)
+    }
+}
 
 $("body").on("click", '[data-close="alert"]', function (t) { $(this).parent(".alert").hide(), $(this).closest(".note").hide(), t.preventDefault() })
 
@@ -79,6 +91,24 @@ $("body").on("click", '[data-close="alert"]', function (t) { $(this).parent(".al
 //         }
 //     })
 // });
+
+$(function () {
+    $.ajax({
+        url: 'http://127.0.0.1:8082/preshine/api/user/getMenuData?PSESSIONID=' + sessionStorage.getItem('p_token'),
+        type: 'get',
+        dataType: 'json',
+        success: function (res) {
+            var data = res.obj;
+            var options = '<optgroup label="Alaskan">';
+            data.forEach(d => {
+                options += '<option value="' + d.id + '">' + d.name + '</option>';
+            })
+            options += '</optgroup>';
+            $('select[name=parentId]').html(options);
+        }
+    })
+
+})
 
 
 
@@ -142,16 +172,23 @@ var validator = e.validate({
 
 
 function showAdd() {
+    $('select[name=parentId]').val('');
+    $('input[name=name]').val('');
+    $('input[name=path]').val('');
+    $('select[name=resType]').val('');
+    $('input[name=var1]').val('');
+    $('input[name=var2]').val();
+    $('input[name=var3]').val();
     validator.resetForm();
     $('#addModal').modal();
 }
 
 $("#resourcesTree").on("submit", function () {
     var formData = {};
-    formData.parentId = $('input[name=parentId]').val();
+    formData.parentId = $('select[name=parentId]').val();
     formData.name = $('input[name=name]').val();
     formData.path = $('input[name=path]').val();
-    formData.resType = $('input[name=resType]').val();
+    formData.resType = $('select[name=resType]').val();
     formData.var1 = $('input[name=var1]').val();
     formData.var2 = $('input[name=var2]').val();
     formData.var3 = $('input[name=var3]').val();
