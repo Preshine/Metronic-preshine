@@ -1,13 +1,32 @@
 var records = [];
 
 $(document).ready(function () {
+    loadTreeView();
+    loadSelectData();
+});
+
+function loadTreeView() {
     $.ajax({
         type: 'get',
         url: 'http://127.0.0.1:8082/preshine/api/user/getMenuData?PSESSIONID=' + sessionStorage.getItem('p_token'),
         dataType: 'json',
         success: function (data) {
             data = data.obj;
+            var table = ' <table id="treeTable" class="table table-striped table-bordered table-hover table-checkable order-column">'
+                     + '<thead>'
+                       + '<tr>'
+                           + '<th class="table-checkbox sorting_disabled" rowspan="1" colspan="1" aria-label="" style="text-align:center;line-height: 35px;background:#F9F9F9;border: 1px solid #e7ecf1">'
+                               + '<div class="checker"><span><input type="checkbox" class="group-checkable" data-set="#sample_2 .checkboxes"></span></div>'
+                            + '</th>'
+                            + '<th style="text-align:center;line-height: 35px;background:#F9F9F9;border: 1px solid #e7ecf1">名字</th>'
+                            + '<th style="text-align:left;line-height: 35px;background:#F9F9F9;border: 1px solid #e7ecf1">URL</th>'
+                            + '<th style="text-align:center;line-height: 35px;background:#F9F9F9;border: 1px solid #e7ecf1">操作</th>'
+                       + '</tr>'
+                    + '</thead>'
+                    + '<tbody></tbody>'
+                + '</table>';
 
+                $('#content .container-fluid').html(table);
             // 属性配置信息
             var attributes = {
                 id: 'id',
@@ -29,7 +48,7 @@ $(document).ready(function () {
             });
             $("#treeTable").treetable({
                 expandable: true,
-                initialState: "expanded",
+                // initialState: "expanded",
                 expandable: true,
                 clickableNodeNames: true,//点击节点名称也打开子节点.                
                 indent: 80//每个分支缩进的像素数。
@@ -47,6 +66,9 @@ $(document).ready(function () {
                     console.log('dataId is :', $(el).attr('dataId'))
                     $.post('http://127.0.0.1:8082/preshine/api/resources/delete1?PSESSIONID=' + sessionStorage.getItem('p_token'), { resId: dataId }, function (res) {
 
+                        // window.location.reload()
+                        loadTreeView();
+                        loadSelectData();
                     })
                 },
                 onCancel: function () {
@@ -55,7 +77,25 @@ $(document).ready(function () {
         }
 
     });
-});
+}
+
+
+function loadSelectData() {
+    $.ajax({
+        url: 'http://127.0.0.1:8082/preshine/api/user/getMenuData?PSESSIONID=' + sessionStorage.getItem('p_token'),
+        type: 'get',
+        dataType: 'json',
+        success: function (res) {
+            var data = res.obj;
+            var options = '<optgroup label="Alaskan">';
+            data.forEach(d => {
+                options += '<option value="' + d.id + '">' + d.name + '</option>';
+            })
+            options += '</optgroup>';
+            $('select[name=parentId]').html(options);
+        }
+    })
+}
 
 function handlerAction(action, me) {
     var me = $(me);
@@ -63,6 +103,17 @@ function handlerAction(action, me) {
     var current = records.filter(r => r.id == dataId)[0];
     if (action == 'edit') {
         console.log(current)
+        $('input[name=resId]').val(current.id);
+        $('select[name=parentId]').val(current.parentId).trigger("change");
+        $('input[name=name]').val(current.name);
+        $('input[name=path]').val(current.path);
+        $('select[name=resType]').val(current.resType);
+        $('input[name=var1]').val(current.var1);
+        $('input[name=var2]').val(current.var2);
+        $('input[name=var3]').val(current.var3);
+        validator.resetForm();
+        i.hide(), r.hide();
+        $('#addModal').modal();
     }
 }
 
@@ -92,23 +143,6 @@ $("body").on("click", '[data-close="alert"]', function (t) { $(this).parent(".al
 //     })
 // });
 
-$(function () {
-    $.ajax({
-        url: 'http://127.0.0.1:8082/preshine/api/user/getMenuData?PSESSIONID=' + sessionStorage.getItem('p_token'),
-        type: 'get',
-        dataType: 'json',
-        success: function (res) {
-            var data = res.obj;
-            var options = '<optgroup label="Alaskan">';
-            data.forEach(d => {
-                options += '<option value="' + d.id + '">' + d.name + '</option>';
-            })
-            options += '</optgroup>';
-            $('select[name=parentId]').html(options);
-        }
-    })
-
-})
 
 
 
@@ -167,49 +201,83 @@ var validator = e.validate({
     success: function (e) {
         e.closest(".form-group").removeClass("has-error")
     },
-    submitHandler: function (e) { i.show(), r.hide() }
+    submitHandler: function (e) {
+        i.show(), r.hide()
+        var formData = {};
+        formData.resId = $('input[name=resId]').val();
+        formData.parentId = $('select[name=parentId]').val();
+        formData.name = $('input[name=name]').val();
+        formData.path = $('input[name=path]').val();
+        formData.resType = $('select[name=resType]').val();
+        formData.var1 = $('input[name=var1]').val();
+        formData.var2 = $('input[name=var2]').val();
+        formData.var3 = $('input[name=var3]').val();
+        formData.PSESSIONID = sessionStorage.getItem('p_token');
+        console.log(formData);
+        $('#addModal').modal('hide');
+        $.ajax({
+            url: 'http://127.0.0.1:8082/preshine/api/resources/addOrEdit1',
+            type: 'post',
+            data: formData,
+            // contentType: 'application/json; charset=utf-8',
+            contentType: 'application/x-www-form-urlencoded; charset=utf-8',
+            dataType: 'json',
+            success: function (res) {
+                if (res.success == true) {
+                    // window.location.reload();
+                    loadTreeView();
+                    loadSelectData();
+                } else {
+
+                }
+            }
+        })
+    }
 })
 
 
 function showAdd() {
-    $('select[name=parentId]').val('');
+    $('input[name=resId]').val('');
+    $('select[name=parentId]').val('').trigger("change");
     $('input[name=name]').val('');
     $('input[name=path]').val('');
     $('select[name=resType]').val('');
     $('input[name=var1]').val('');
-    $('input[name=var2]').val();
-    $('input[name=var3]').val();
+    $('input[name=var2]').val('');
+    $('input[name=var3]').val('');
     validator.resetForm();
+    i.hide(), r.hide()
     $('#addModal').modal();
 }
 
-$("#resourcesTree").on("submit", function () {
-    var formData = {};
-    formData.parentId = $('select[name=parentId]').val();
-    formData.name = $('input[name=name]').val();
-    formData.path = $('input[name=path]').val();
-    formData.resType = $('select[name=resType]').val();
-    formData.var1 = $('input[name=var1]').val();
-    formData.var2 = $('input[name=var2]').val();
-    formData.var3 = $('input[name=var3]').val();
-    formData.PSESSIONID = sessionStorage.getItem('p_token');
-    console.log(formData);
-    // $.ajax({
-    //     url: 'http://127.0.0.1:8082/preshine/api/resources/addOrEdit1',
-    //     type: 'post',
-    //     data: formData,
-    //     // contentType: 'application/json; charset=utf-8',
-    //     contentType: 'application/x-www-form-urlencoded; charset=utf-8',
-    //     dataType: 'json',
-    //     success: function (res) {
-    //         if (res.success == true) {
+// 不使用 表单提交，使用 validater校验通过了提交数据
+// $("#resourcesTree").on("submit", function () {
+//     var formData = {};
+//     formData.parentId = $('select[name=parentId]').val();
+//     formData.name = $('input[name=name]').val();
+//     formData.path = $('input[name=path]').val();
+//     formData.resType = $('select[name=resType]').val();
+//     formData.var1 = $('input[name=var1]').val();
+//     formData.var2 = $('input[name=var2]').val();
+//     formData.var3 = $('input[name=var3]').val();
+//     formData.PSESSIONID = sessionStorage.getItem('p_token');
+//     console.log(formData);
+//     $.ajax({
+//         url: 'http://127.0.0.1:8082/preshine/api/resources/addOrEdit1',
+//         type: 'post',
+//         data: formData,
+//         // contentType: 'application/json; charset=utf-8',
+//         contentType: 'application/x-www-form-urlencoded; charset=utf-8',
+//         dataType: 'json',
+//         success: function (res) {
+//             if (res.success == true) {
 
-    //         } else {
+//             } else {
 
-    //         }
-    //     }
-    // })
-})
+//             }
+//         }
+//     })
+// })
 function submit() {
     $("#resourcesTree").submit();
 }
