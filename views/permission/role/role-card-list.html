@@ -6,12 +6,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" type="text/css" href="../../../assets/global/plugins/bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="../../../libs/jquery.treetable.css">
-    <link rel="stylesheet" type="text/css" href="../../../libs/jquery.treetable.theme.default.css">
-    <link rel="stylesheet" href="https://cdn.bootcss.com/jquery-treegrid/0.2.0/css/jquery.treegrid.min.css">
-    <link href="../../../assets/global/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css" />
-    <link href="../../../assets/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet"
-        type="text/css" />
+    <link href="../../../assets/global/plugins/jstree/dist/themes/default/style.min.css" rel="stylesheet" type="text/css" />
     <link href="../../../assets/global/css/components.min.css" rel="stylesheet" id="style_components" type="text/css" />
     <link href="../../../assets/global/css/plugins.min.css" rel="stylesheet" type="text/css" />
 </head>
@@ -23,16 +18,17 @@
 </style>
 
 <body>
+    <a class="btn red btn-outline sbold" onclick="showAdd()" href="#responsive"> 新建角色 </a>
     <div id="content">
         <div class="container-fluid">
-            <div id="cardlist" style="width: 800px;" >
+            <div id="cardlist" style="width: 800px;">
 
             </div>
         </div>
     </div>
 
     <!-- /.modal -->
-    <div id="addModal" class="modal fade" tabindex="-1" aria-hidden="true">
+    <div id="addOrEditModal" class="modal fade" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -40,7 +36,7 @@
                     <h4 class="modal-title">新建资源</h4>
                 </div>
                 <div class="modal-body">
-                    <div class="scroller" style="" data-always-visible="1" data-rail-visible1="1">
+                    <div class="scroller1" style="" data-always-visible="1" data-rail-visible1="1">
                         <!-- BEGIN FORM-->
                         <form action="#" id="resourcesTree" class="form-horizontal">
                             <div class="form-body">
@@ -50,71 +46,93 @@
                                 <div class="alert alert-success display-hide">
                                     <button class="close" data-close="alert"></button> 校验通过
                                 </div>
+                                <input name="roleId" type="hidden" class="form-control" />
                                 <div class="form-group">
                                     <label class="control-label col-md-3">
-                                        上级资源
-                                    </label>
-                                    <div class="col-md-4">
-                                        <input type="text" name="parentId" data-required="1" class="form-control" />
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="control-label col-md-3">
-                                        <span class="required"> * </span>资源名称
+                                        <span class="required"> * </span>角色名称
                                     </label>
                                     <div class="col-md-4">
                                         <input name="name" type="text" class="form-control" /> </div>
                                 </div>
                                 <div class="form-group">
                                     <label class="control-label col-md-3">
-                                        <span class="required"> * </span>资源路径
+                                        <span class="required"> * </span>角色描述
                                     </label>
-                                    <div class="col-md-4">
-                                        <input name="path" type="text" class="form-control" /> </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="control-label col-md-3">
-                                        <span class="required"> * </span>资源类型
-                                    </label>
-                                    <div class="col-md-4">
-                                        <select class="form-control" name="resType">
-                                            <option value="menu">menu</option>
-                                            <option value="button">button</option>
-                                            <option value="element">element</option>
-                                            <option value="controller">controller</option>
-                                        </select>
+                                    <div class="col-md-6">
+                                        <textarea id="description" name="description" class="form-control"></textarea>
                                     </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="control-label col-md-3">
-                                        var1
-                                    </label>
-                                    <div class="col-md-4">
-                                        <input name="var1" type="text" class="form-control" /> </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="control-label col-md-3">
-                                        var2
-                                    </label>
-                                    <div class="col-md-4">
-                                        <input name="var2" type="text" class="form-control" /> </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="control-label col-md-3">
-                                        var3
-                                    </label>
-                                    <div class="col-md-4">
-                                        <input name="var3" type="text" class="form-control" /> </div>
                                 </div>
                             </div>
-                            <!-- <div class="form-actions">
-                                <div class="row">
-                                    <div class="col-md-offset-3 col-md-9">
-                                        <button type="submit" class="btn green">Submit</button>
-                                        <button type="button" class="btn grey-salsa btn-outline">Cancel</button>
+                        </form>
+                        <!-- END FORM-->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn dark btn-outline">取消</button>
+                    <button type="button" class="btn green" onclick="submit()">提交</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- auth modal -->
+    <div id="authModal" class="modal fade" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+                    <h4 class="modal-title">新建资源</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="scroller1" style="" data-always-visible="1" data-rail-visible1="1">
+                        <!-- BEGIN FORM-->
+                        <form action="#" id="resourcesTree" class="form-horizontal">
+                            <div class="row">
+                                    <div class="col-md-8">
+                                            <div class="portlet light bordered">
+                                                <div class="portlet-title">
+                                                    <div class="caption">
+                                                        <i class="icon-bubble font-green-sharp"></i>
+                                                        <span class="caption-subject font-green-sharp bold uppercase">Checkable Tree</span>
+                                                    </div>
+                                                    <div class="actions">
+                                                        <div class="btn-group">
+                                                            <a class="btn green-haze btn-outline btn-circle btn-sm" href="javascript:;" data-toggle="dropdown" data-hover="dropdown" data-close-others="true"> Actions
+                                                                <i class="fa fa-angle-down"></i>
+                                                            </a>
+                                                            <ul class="dropdown-menu pull-right">
+                                                                <li>
+                                                                    <a href="javascript:;"> Option 1</a>
+                                                                </li>
+                                                                <li class="divider"> </li>
+                                                                <li>
+                                                                    <a href="javascript:;">Option 2</a>
+                                                                </li>
+                                                                <li>
+                                                                    <a href="javascript:;">Option 3</a>
+                                                                </li>
+                                                                <li>
+                                                                    <a href="javascript:;">Option 4</a>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="portlet-body">
+                                                    <div id="tree_2" class="tree-demo"> </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div> -->
+                            </div>
+                            <!-- <div class="form-actions">
+                                    <div class="row">
+                                        <div class="col-md-offset-3 col-md-9">
+                                            <button type="submit" class="btn green">Submit</button>
+                                            <button type="button" class="btn grey-salsa btn-outline">Cancel</button>
+                                        </div>
+                                    </div>
+                                </div> -->
                         </form>
                         <!-- END FORM-->
                     </div>
@@ -137,7 +155,7 @@
     <script src="../../../assets/global/plugins/jquery.blockui.min.js" type="text/javascript"></script>
     <script src="../../../assets/global/plugins/uniform/jquery.uniform.min.js" type="text/javascript"></script>
     <script src="../../../assets/global/plugins/bootstrap-switch/js/bootstrap-switch.min.js" type="text/javascript"></script>
-    <!-- <script src="../../../assets/global/scripts/app.min.js" type="text/javascript"></script> -->
+    <script src="../../../assets/global/scripts/app.min.js" type="text/javascript"></script>
 
     <script src="../../../assets/global/plugins/select2/js/select2.full.min.js" type="text/javascript"></script>
     <script src="../../../assets/global/plugins/jquery-validation/js/jquery.validate.min.js" type="text/javascript"></script>
@@ -154,6 +172,8 @@
 
 
     <script src="../../../assets/pages/scripts/ui-modals.min.js" type="text/javascript"></script>
+    <script src="../../../assets/global/plugins/jstree/dist/jstree.min.js" type="text/javascript"></script>
+    <script src="../../../assets/pages/scripts/ui-tree.min.js" type="text/javascript"></script>
     <!-- <script src="../../../assets/pages/scripts/form-validation.min.js" type="text/javascript"></script> -->
     <!-- BEGIN PAGE LEVEL PLUGINS -->
     <script src="../../../assets/global/plugins/select2/js/select2.full.min.js" type="text/javascript"></script>
