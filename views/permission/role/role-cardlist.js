@@ -140,6 +140,36 @@ var validator = e.validate({
     }
 })
 
+
+$(function () {
+    $("#tree_2").jstree({
+        plugins: ["wholerow", "checkbox", "types"],
+        core: {
+            themes: { responsive: !1 },
+            data: function (obj, callback) {
+                $.get('http://127.0.0.1:8082/preshine/api/role/getResTreeList1', function (data) {
+                    callback.call(this, data);
+                }, 'json');
+            },
+        },
+        checkbox: {
+            three_state: false
+        },
+        types: {
+            "default": { icon: "fa fa-folder icon-state-warning icon-lg" },
+            file: { icon: "fa fa-file icon-state-warning icon-lg" }
+        }
+    })
+})
+
+function getCheckedRes() {
+    var ref = $('#tree_2').jstree(true);
+    var arr = ref.get_checked(true);
+    //设置不级联父子节点操作了 这里不用加上undetermined状态的节点
+    // arr = arr.concat(ref.get_undetermined(true));
+    return arr;
+}
+
 function showAdd() {
     validator.resetForm();
     i.hide(), r.hide()
