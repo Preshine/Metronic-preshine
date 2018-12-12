@@ -9,11 +9,12 @@ function cardList(props) {
         var str = '<div class="card" style="width:200px;margin: 10px 10px;">'
             + '<img class="card-img-top" src="http://static.runoob.com/images/mix/img_avatar.png" alt="Card image" style="width:100%">'
             + '<div class="card-body">'
-            + '<h4 class="card-title">' + d.name + '</h4>'
+            + '<h4 class="card-title"><a href="javascript:void(0)" >' + d.name + '</a></h4>'
             + '<p class="card-text">' + d.description + '</p>';
 
+        str += '<div>'
         actions.forEach((action, ai) => {
-            str += '<button class="btn btn-primary" id="card_' + di + ai + '">' + action.text + '</button>';
+            str += '<button class="btn btn-primary" id="card_' + di + ai + '">' + (action.renderer ? action.renderer(d) : action.text) + '</button>';
             //这样绑定事件会让后来加入的dom节点也会添加上点击事件
             $(document).on('click', '#card_' + di + ai, function () {
                 console.log('action', action);
@@ -21,8 +22,9 @@ function cardList(props) {
             });
         })
 
-        str += '</div>'
-        str += '</div>'
+        str += '</div>';
+        str += '</div>';
+        str += '</div>';
 
         html += str;
     });
@@ -41,6 +43,8 @@ $(function () {
                 text: '编辑',
                 handler: function (record) {
                     console.log('edit' + JSON.stringify(record));
+                    validator.resetForm();
+                    i.hide(), r.hide();
                     $('input[name=roleId]').val(record.id);
                     $('input[name=name]').val(record.name);
                     $('#description').val(record.description);
@@ -50,7 +54,66 @@ $(function () {
                 text: '分配资源',
                 handler: function (record) {
                     console.log('change res' + JSON.stringify(record));
+                    $('#authRoleId').val(record.id);
+                    $.ajax({
+                        url: 'http://127.0.0.1:8082/preshine/api/role/getResByRoleId1?roleId=' + record.id,
+                        type: 'get',
+                        // contentType: 'application/json; charset=utf-8',
+                        contentType: 'application/x-www-form-urlencoded; charset=utf-8',
+                        dataType: 'json',
+                        success: function (res) {
+                            var checked = res.checked;
+                            setCheckedRes(checked);
+                        }
+                    })
+
                     $('#authModal').modal();
+
+                }
+            }, {
+                renderer: function (record) {
+                    if (record.status == 1) {
+                        return "禁用";
+                    }
+                    return "启用";
+                },
+                handler: function (record) {
+                    console.log('disable res' + JSON.stringify(record));
+                    $.ajax({
+                        url: 'http://127.0.0.1:8082/preshine/api/role/handleStatus1',
+                        type: 'post',
+                        data: { roleId: record.id, status: record.status == 1 ? 0 : 1 },
+                        // contentType: 'application/json; charset=utf-8',
+                        contentType: 'application/x-www-form-urlencoded; charset=utf-8',
+                        dataType: 'json',
+                        success: function (res) {
+                            if (res.success == true) {
+                                window.location.reload();
+                            } else {
+
+                            }
+                        }
+                    })
+                }
+            }, {
+                text: '删除',
+                handler: function (record) {
+                    console.log('delete res' + JSON.stringify(record));
+                    $.ajax({
+                        url: 'http://127.0.0.1:8082/preshine/api/role/delete1',
+                        type: 'post',
+                        data: { roleId: record.id },
+                        // contentType: 'application/json; charset=utf-8',
+                        contentType: 'application/x-www-form-urlencoded; charset=utf-8',
+                        dataType: 'json',
+                        success: function (res) {
+                            if (res.success == true) {
+                                window.location.reload();
+                            } else {
+
+                            }
+                        }
+                    })
                 }
             }],
             target: '#cardlist'
@@ -81,7 +144,7 @@ var cnmsg = {
 
 jQuery.extend(jQuery.validator.messages, cnmsg);
 
-var e = $("#resourcesTree"),
+var e = $("#editRole"),
     r = $(".alert-danger", e),
     i = $(".alert-success", e);
 var validator = e.validate({
@@ -93,10 +156,7 @@ var validator = e.validate({
         name: {
             minlength: 2, required: true
         },
-        path: {
-            required: true
-        },
-        resType: {
+        description: {
             required: true
         }
     },
@@ -123,7 +183,7 @@ var validator = e.validate({
         console.log(formData);
         $('#addOrEditModal').modal('hide');
         $.ajax({
-            url: 'http://127.0.0.1:8082/preshine/api/resources/addOrEdit1',
+            url: 'http://127.0.0.1:8082/preshine/api/role/addOrEdit1',
             type: 'post',
             data: formData,
             // contentType: 'application/json; charset=utf-8',
@@ -164,10 +224,43 @@ $(function () {
 
 function getCheckedRes() {
     var ref = $('#tree_2').jstree(true);
-    var arr = ref.get_checked(true);
+    // var arr = ref.get_checked(true); //参数加一个true 返回整个节点对象
+    var arr = ref.get_checked();//参数不加true返回id数组
     //设置不级联父子节点操作了 这里不用加上undetermined状态的节点
     // arr = arr.concat(ref.get_undetermined(true));
     return arr;
+}
+
+function setCheckedRes(arr) {
+    var ref = $('#tree_2').jstree(true);
+    ref.uncheck_all();
+    var arr = ref.check_node(arr);
+    return arr;
+}
+
+function addOrEditRoleRes() {
+    var checked = getCheckedRes();
+    if (!checked || checked.length == 0) {
+        console.log('角色资源不能为空')
+        return;
+    }
+    var postData = { roleId: $('#authRoleId').val(), res: checked.join() };
+    console.log(postData);
+    $.ajax({
+        url: 'http://127.0.0.1:8082/preshine/api/role/addorEditRoleRes1',
+        type: 'post',
+        data: postData,
+        // contentType: 'application/json; charset=utf-8',
+        contentType: 'application/x-www-form-urlencoded; charset=utf-8',
+        dataType: 'json',
+        success: function (res) {
+            if (res.success == true) {
+                window.location.reload();
+            } else {
+
+            }
+        }
+    })
 }
 
 function showAdd() {
@@ -176,4 +269,9 @@ function showAdd() {
     $('input[name=roleId]').val('');
     $('input[name=name]').val('');
     $('#description').val('');
+    $('#addOrEditModal').modal();
+}
+
+function submit() {
+    $("#editRole").submit();
 }
