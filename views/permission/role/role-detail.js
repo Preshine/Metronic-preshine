@@ -8,7 +8,25 @@ $(function () {
     var oButtonInit = ButtonInit();
     oButtonInit.Init();
 
+    getRoleDetail();
+    loadTreeView();
+
+
 });
+
+function getRoleDetail() {
+    $.ajax({
+        type: 'get',
+        url: 'http://127.0.0.1:8082/preshine/api/role/getRoleDetail?roleId=1',
+        dataType: 'json',
+        success: function (data) {
+            $('.profile-usertitle-name').html(data.role.name);
+            $('.profile-usertitle-job').html(data.role.description);
+            $('#roleResSize').html(data.roleResSize);
+            $('#userRolesSize').html(data.userRolesSize);
+        }
+    })
+}
 
 
 var TableInit = function (roleId) {
@@ -18,8 +36,8 @@ var TableInit = function (roleId) {
         $('#tb_departments').bootstrapTable({
             url: 'http://127.0.0.1:8082/preshine/api/role/getUsersByrole1',         //请求后台的URL（*）
             method: 'get',                      //请求方式（*）
-            contentType:'application/x-www-form-urlencoded; charset=UTF-8',
-            toolbar: '#toolbar',                //工具按钮用哪个容器
+            contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+            // toolbar: '#toolbar',                //工具按钮用哪个容器
             striped: true,                      //是否显示行间隔色
             cache: false,                       //是否使用缓存，默认为true，所以一般情况下需要设置一下这个属性（*）
             pagination: true,                   //是否显示分页（*）
@@ -30,7 +48,8 @@ var TableInit = function (roleId) {
             pageNumber: 1,                       //初始化加载第一页，默认第一页
             pageSize: 10,                       //每页的记录行数（*）
             // pageList: [10, 20, 30],        //可供选择的每页的行数（*）
-            search: false,                       //是否显示表格搜索，此搜索是客户端搜索，不会进服务端，所以，个人感觉意义不大
+            search: true,                       //是否显示表格搜索
+            formatSearch: function () { return '搜索用户名或手机号...' },
             strictSearch: true,
             showColumns: false,                  //是否显示所有的列
             showRefresh: false,                  //是否显示刷新按钮
@@ -41,21 +60,23 @@ var TableInit = function (roleId) {
             showToggle: false,                    //是否显示详细视图和列表视图的切换按钮
             cardView: false,                    //是否显示详细视图
             detailView: false,                   //是否显示父子表
-            columns: [{
-                checkbox: true
-            }, {
-                field: 'id',
-                title: 'ID'
-            }, {
-                field: 'userName',
-                title: '用户名'
-            }, {
-                field: 'mobile',
-                title: '手机号'
-            }, {
-                field: 'sex',
-                title: '性别'
-            },]
+            columns: [
+                // {
+                //     checkbox: true
+                // },
+                {
+                    field: 'id',
+                    title: 'ID'
+                }, {
+                    field: 'userName',
+                    title: '用户名'
+                }, {
+                    field: 'mobile',
+                    title: '手机号'
+                }, {
+                    field: 'sex',
+                    title: '性别'
+                },]
         });
     };
 
@@ -66,7 +87,7 @@ var TableInit = function (roleId) {
             pageSize: params.limit,   //页面大小
             current: (params.offset / params.limit) + 1,  //页码
             roleId: 1,
-            search: params.search
+            mobileOrUserName: params.search
             // departmentname: $("#txt_search_departmentname").val(),
             // statu: $("#txt_search_statu").val()
         };
@@ -87,247 +108,47 @@ var ButtonInit = function () {
     return oInit;
 };
 
-$(function () {
-    $.get('http://127.0.0.1:8082/preshine/api/role/list?PSESSIONID=' + sessionStorage.getItem('p_token'), function (res) {
-        console.log(res);
-        cardList({
-            data: res,
-            cardClick: function (record) {
-                console.log('card click', record);
-            },
-            actions: [{
-                text: '编辑',
-                handler: function (record) {
-                    console.log('edit' + JSON.stringify(record));
-                    validator.resetForm();
-                    i.hide(), r.hide();
-                    $('input[name=roleId]').val(record.id);
-                    $('input[name=name]').val(record.name);
-                    $('#description').val(record.description);
-                    $('#addOrEditModal').modal();
-                }
-            }, {
-                text: '分配资源',
-                handler: function (record) {
-                    console.log('change res' + JSON.stringify(record));
-                    $('#authRoleId').val(record.id);
-                    $.ajax({
-                        url: 'http://127.0.0.1:8082/preshine/api/role/getResByRoleId1?roleId=' + record.id,
-                        type: 'get',
-                        // contentType: 'application/json; charset=utf-8',
-                        contentType: 'application/x-www-form-urlencoded; charset=utf-8',
-                        dataType: 'json',
-                        success: function (res) {
-                            var checked = res.checked;
-                            setCheckedRes(checked);
-                        }
-                    })
 
-                    $('#authModal').modal();
-
-                }
-            }, {
-                renderer: function (record) {
-                    if (record.status == 1) {
-                        return "禁用";
-                    }
-                    return "启用";
-                },
-                handler: function (record) {
-                    console.log('disable res' + JSON.stringify(record));
-                    $.ajax({
-                        url: 'http://127.0.0.1:8082/preshine/api/role/handleStatus1',
-                        type: 'post',
-                        data: { roleId: record.id, status: record.status == 1 ? 0 : 1 },
-                        // contentType: 'application/json; charset=utf-8',
-                        contentType: 'application/x-www-form-urlencoded; charset=utf-8',
-                        dataType: 'json',
-                        success: function (res) {
-                            if (res.success == true) {
-                                window.location.reload();
-                            } else {
-
-                            }
-                        }
-                    })
-                }
-            }, {
-                text: '删除',
-                handler: function (record) {
-                    console.log('delete res' + JSON.stringify(record));
-                    $.ajax({
-                        url: 'http://127.0.0.1:8082/preshine/api/role/delete1',
-                        type: 'post',
-                        data: { roleId: record.id },
-                        // contentType: 'application/json; charset=utf-8',
-                        contentType: 'application/x-www-form-urlencoded; charset=utf-8',
-                        dataType: 'json',
-                        success: function (res) {
-                            if (res.success == true) {
-                                window.location.reload();
-                            } else {
-
-                            }
-                        }
-                    })
-                }
-            }],
-            target: '#cardlist'
-        })
-    })
-})
-
-//定义中文消息
-var cnmsg = {
-    required: '必填字段',
-    remote: '请修正该字段',
-    email: '请输入正确格式的电子邮件',
-    url: '请输入合法的网址',
-    date: '请输入合法的日期',
-    dateISO: '请输入合法的日期 (ISO).',
-    number: '请输入合法的数字',
-    digits: '只能输入整数',
-    creditcard: '请输入合法的信用卡号',
-    equalTo: '请再次输入相同的值',
-    accept: '请输入拥有合法后缀名的字符串',
-    maxlength: jQuery.validator.format('请输入一个长度最多是 {0} 的字符串'),
-    minlength: jQuery.validator.format('请输入一个长度最少是 {0} 的字符串'),
-    rangelength: jQuery.validator.format('请输入一个长度介于 {0} 和 {1} 之间的字符串'),
-    range: jQuery.validator.format('请输入一个介于 {0} 和 {1} 之间的值'),
-    max: jQuery.validator.format('请输入一个最大为 {0} 的值'),
-    min: jQuery.validator.format('请输入一个最小为 {0} 的值')
-};
-
-jQuery.extend(jQuery.validator.messages, cnmsg);
-
-var e = $("#editRole"),
-    r = $(".alert-danger", e),
-    i = $(".alert-success", e);
-var validator = e.validate({
-    errorElement: "span",
-    errorClass: "help-block help-block-error",
-    focusInvalid: !1,
-    ignore: "",
-    rules: {
-        name: {
-            minlength: 2, required: true
-        },
-        description: {
-            required: true
-        }
-    },
-    invalidHandler: function (e, t) {
-        i.hide(), r.show();
-        // App.scrollTo(r, -200)
-    },
-    highlight: function (e) {
-        $(e).closest(".form-group").addClass("has-error")
-    },
-    unhighlight: function (e) {
-        $(e).closest(".form-group").removeClass("has-error")
-    },
-    success: function (e) {
-        e.closest(".form-group").removeClass("has-error")
-    },
-    submitHandler: function (e) {
-        i.show(), r.hide()
-        var formData = {};
-        formData.roleId = $('input[name=roleId]').val();
-        formData.name = $('input[name=name]').val();
-        formData.description = $('#description').val();
-        formData.PSESSIONID = sessionStorage.getItem('p_token');
-        console.log(formData);
-        $('#addOrEditModal').modal('hide');
-        $.ajax({
-            url: 'http://127.0.0.1:8082/preshine/api/role/addOrEdit1',
-            type: 'post',
-            data: formData,
-            // contentType: 'application/json; charset=utf-8',
-            contentType: 'application/x-www-form-urlencoded; charset=utf-8',
-            dataType: 'json',
-            success: function (res) {
-                if (res.success == true) {
-                    window.location.reload();
-                } else {
-
-                }
-            }
-        })
-    }
-})
-
-
-$(function () {
-    $("#tree_2").jstree({
-        plugins: ["wholerow", "checkbox", "types"],
-        core: {
-            themes: { responsive: !1 },
-            data: function (obj, callback) {
-                $.get('http://127.0.0.1:8082/preshine/api/role/getResTreeList1', function (data) {
-                    callback.call(this, data);
-                }, 'json');
-            },
-        },
-        checkbox: {
-            three_state: false
-        },
-        types: {
-            "default": { icon: "fa fa-folder icon-state-warning icon-lg" },
-            file: { icon: "fa fa-file icon-state-warning icon-lg" }
-        }
-    })
-})
-
-function getCheckedRes() {
-    var ref = $('#tree_2').jstree(true);
-    // var arr = ref.get_checked(true); //参数加一个true 返回整个节点对象
-    var arr = ref.get_checked();//参数不加true返回id数组
-    //设置不级联父子节点操作了 这里不用加上undetermined状态的节点
-    // arr = arr.concat(ref.get_undetermined(true));
-    return arr;
-}
-
-function setCheckedRes(arr) {
-    var ref = $('#tree_2').jstree(true);
-    ref.uncheck_all();
-    var arr = ref.check_node(arr);
-    return arr;
-}
-
-function addOrEditRoleRes() {
-    var checked = getCheckedRes();
-    if (!checked || checked.length == 0) {
-        console.log('角色资源不能为空')
-        return;
-    }
-    var postData = { roleId: $('#authRoleId').val(), res: checked.join() };
-    console.log(postData);
+function loadTreeView() {
     $.ajax({
-        url: 'http://127.0.0.1:8082/preshine/api/role/addorEditRoleRes1',
-        type: 'post',
-        data: postData,
-        // contentType: 'application/json; charset=utf-8',
-        contentType: 'application/x-www-form-urlencoded; charset=utf-8',
+        type: 'get',
+        url: 'http://127.0.0.1:8082/preshine/api/role/getResTreeList1?roleId=1',
         dataType: 'json',
-        success: function (res) {
-            if (res.success == true) {
-                window.location.reload();
-            } else {
+        success: function (data) {
+            var table = ' <table id="treeTable" class="table table-striped table-bordered table-hover order-column">'
+                + '<thead>'
+                + '<tr>'
+                + '<th style="text-align:center;line-height: 35px;background:#F9F9F9;border: 1px solid #e7ecf1">名字</th>'
+                + '<th style="text-align:left;line-height: 35px;background:#F9F9F9;border: 1px solid #e7ecf1">URL</th>'
+                + '</tr>'
+                + '</thead>'
+                + '<tbody></tbody>'
+                + '</table>';
 
-            }
+            $('#portlet_tab1 .scroller').html(table);
+            // 属性配置信息
+            var attributes = {
+                id: 'id',
+                parentId: 'parentId',
+            };
+            var data = toTreeData(data, attributes);
+            var list = [];
+            treeToList(data[0], list);
+            $.each(list, function (index, obj) {
+                var rowCls = index % 2 > 0 ? 'odd' : 'even';
+                $("#treeTable tbody").append("<tr class=\"" + rowCls + "\" data-tt-id=\"" + obj.id + "\" data-tt-parent-id=\"" + obj.parentId + "\">"
+                    + "<td class=\"center\" style='text-align:center;vertical-align:middle;' >" + obj.name + "</td>"
+                    + "<td class=\"center\" style='text-align:left;vertical-align:middle;'>" + obj.path + "</td>"
+                    + "</tr>");
+            });
+            $("#treeTable").treetable({
+                expandable: true,
+                initialState: "expanded",
+                expandable: true,
+                clickableNodeNames: true,//点击节点名称也打开子节点.                
+                indent: 80//每个分支缩进的像素数。
+            });
         }
-    })
-}
 
-function showAdd() {
-    validator.resetForm();
-    i.hide(), r.hide()
-    $('input[name=roleId]').val('');
-    $('input[name=name]').val('');
-    $('#description').val('');
-    $('#addOrEditModal').modal();
-}
-
-function submit() {
-    $("#editRole").submit();
+    });
 }
