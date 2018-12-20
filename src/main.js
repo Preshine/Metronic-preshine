@@ -37,18 +37,17 @@ let attributes = {
 };
 
 
+
 function buildMenu(menu) {
-    if (menu.children) {
+    if (menu.children.length > 0) {
         var node = '<ul class="sub-menu">';
         menu.children.forEach(m => {
-            var childNode = '<li class="nav-item start active open">'
-                + '<a onclick="router(this)" path=' + m.path + ' class="nav-link">'
-                + '<i class="icon-home"></i>'
+            var childNode = '<li class="nav-item ' + (m.children.length > 0 ? 'hasChildren ' : '') + ' navId' + m.id + '">'
+                + '<a ' + (!m.children.length > 0 ? 'onclick="router(this)" path="' + m.path + '?navId=' + m.id + '"' : 'class="nav-link nav-toggle"') + '">'
                 + '<span class="title">' + m.name + '</span>'
-                + '<span class="selected"></span>'
-                + '<span class="arrow open"></span>'
+                + '<span ' + (m.children.length > 0 ? 'class="arrow"' : '') + '></span>'
                 + '</a>';
-            if (m.children) {
+            if (m.children.length > 0) {
                 childNode += buildMenu(m);
             }
             childNode += '</li>'
@@ -61,6 +60,16 @@ function buildMenu(menu) {
     return '';
 }
 
+//获取地址栏的参数
+function GetQueryString(name) {
+    var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+    var r = window.location.search.substr(1).match(reg);
+    if (r != null) return unescape(r[2]);
+    return null;
+}
+
+var navId = GetQueryString('navId');
+
 
 $.get('http://127.0.0.1:8082/preshine/api/user/getMenuData', { PSESSIONID: sessionStorage.getItem('p_token') }, function (data) {
     if (data.success) {
@@ -68,21 +77,27 @@ $.get('http://127.0.0.1:8082/preshine/api/user/getMenuData', { PSESSIONID: sessi
         let treeData = toTreeData(menus, attributes);
         var node = '<li class="sidebar-toggler-wrapper hide"><div class="sidebar-toggler"> </div></li>';
         if (treeData && treeData[0] && treeData[0].children) {
+            var navId = 17;
             treeData[0].children.forEach(m => {
 
-                node += '<li class="nav-item start active open">' 
-                                + '<a onclick="router(this)" path=' + m.path + ' class="nav-link nav-toggle">' 
+                node += '<li class="nav-item hasChildren">' 
+                                + '<a class="nav-link nav-toggle">' 
                                     +  '<i class="icon-home"></i>'
                                     +  '<span class="title">' + m.name + '</span>'
-                                    +  '<span class="selected"></span>'
-                                    +  '<span class="arrow open"></span>'
+                                    // +  '<span class="selected"></span>'
+                                    +  '<span class="arrow hasOpen"></span>'
                                 + '</a>';
                 var str = buildMenu(m);
                 node += str
-                node += '</li></ul>';
+                node += '</li>';
             });
             console.log('node is :', node);
             $('#contentMenu').html(node);
+            //设置当前选中的菜单的父级目录菜单选中
+            $('.navId' + navId).parents('.hasChildren').addClass('active open');
+            $('.navId' + navId).parents('.hasOpen').addClass('open');
+            //选中当前的菜单
+            $('.navId' + navId).addClass('active open');
         }
         console.log(treeData);
     }
