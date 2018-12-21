@@ -76,6 +76,11 @@
 
     var file = files[0]
 
+    // 2018年12月21日15:20:30 添加判断图片格式不正确则直接返回
+    if (file.type !== 'undefined' && !file.type.match(/^image\/(gif|png|jpeg)$/)) {
+      return;
+    }
+
     if (this.$preview.length > 0 && (typeof file.type !== "undefined" ? file.type.match(/^image\/(gif|png|jpeg)$/) : file.name.match(/\.(gif|png|jpe?g)$/i)) && typeof FileReader !== "undefined") {
       var reader = new FileReader()
       var preview = this.$preview
@@ -98,14 +103,16 @@
       }
 
       reader.readAsDataURL(file)
-    } else {
-      this.$element.find('.fileinput-filename').text(file.name)
-      this.$preview.text(file.name)
+    } 
+    //2018年12月21日15:20:59 注释掉插件 else部分代码，暂时只开启图片上传
+    // else {
+    //   this.$element.find('.fileinput-filename').text(file.name)
+    //   this.$preview.text(file.name)
       
-      this.$element.addClass('fileinput-exists').removeClass('fileinput-new')
+    //   this.$element.addClass('fileinput-exists').removeClass('fileinput-new')
       
-      this.$element.trigger('change.bs.fileinput')
-    }
+    //   this.$element.trigger('change.bs.fileinput')
+    // }
   },
 
   Fileinput.prototype.clear = function(e) {
